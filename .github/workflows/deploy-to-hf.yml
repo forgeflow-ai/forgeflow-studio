@@ -2,19 +2,46 @@ name: Deploy to Hugging Face Space (studio)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: hf-deploy-studio
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate HF token exists
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "HF_TOKEN secret is missing."
+            exit 1
+          fi
 
       - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          set -e
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git remote add hf https://forgeflow-ai:${HF_TOKEN}@huggingface.co/spaces/forgeflow-ai/forgeflow-studio
+
+          # Add HF remote (idempotent)
+          if git remote get-url hf >/dev/null 2>&1; then
+            git remote set-url hf "https://forgeflow-ai:${HF_TOKEN}@huggingface.co/spaces/forgeflow-ai/forgeflow-studio"
+          else
+            git remote add hf "https://forgeflow-ai:${HF_TOKEN}@huggingface.co/spaces/forgeflow-ai/forgeflow-studio"
+          fi
+
+          # Force-push main to Space main
           git push hf HEAD:main --force
