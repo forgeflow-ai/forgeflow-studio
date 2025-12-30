@@ -1,61 +1,32 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-function withTimeout(ms: number) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
-  return { controller, clear: () => clearTimeout(id) };
-}
-
 export async function GET() {
-  const base =
-    process.env.NEXT_PUBLIC_API_BASE ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.CORE_API_BASE;
-
+  const base = process.env.NEXT_PUBLIC_API_BASE; // HF Space variable
   if (!base) {
     return NextResponse.json(
-      { ok: false, error: "Missing env: NEXT_PUBLIC_API_BASE (or CORE_API_BASE)" },
+      { ok: false, error: "NEXT_PUBLIC_API_BASE missing" },
       { status: 500 }
     );
   }
 
-  const url = `${base.replace(/\/$/, "")}/health`;
-
-  const t = withTimeout(8000);
-
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${base.replace(/\/$/, "")}/health`, {
       cache: "no-store",
-      signal: t.controller.signal,
-      headers: { Accept: "application/json" },
     });
 
-    const text = await res.text();
-    let data: any = text;
+    const text = await res.text(); // json parse fail olursa görmek için
+    let data: any;
     try {
       data = JSON.parse(text);
-    } catch {}
+    } catch {
+      data = { raw: text };
+    }
 
-    return NextResponse.json(
-      { ok: res.ok, status: res.status, url, data },
-      { status: res.ok ? 200 : 502 }
-    );
+    return NextResponse.json({ ok: res.ok, status: res.status, data });
   } catch (e: any) {
-    // fetch failed gibi saçma mesajları kırıp içini gösteriyoruz
     return NextResponse.json(
-      {
-        ok: false,
-        url,
-        error: String(e?.message || e),
-        name: e?.name,
-        cause: e?.cause ? String(e.cause) : null,
-      },
-      { status: 502 }
+      { ok: false, error: e?.message ?? "proxy fetch failed" },
+      { status: 500 }
     );
-  } finally {
-    t.clear();
   }
 }
