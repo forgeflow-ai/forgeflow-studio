@@ -2,23 +2,19 @@ name: Deploy to Hugging Face Space (studio)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository (full history)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set git identity
-        run: |
-          git config --global user.name "ForgeFlow CI"
-          git config --global user.email "ci@forgeflow.local"
+      - uses: actions/checkout@v4
 
       - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://forgeflow-ai:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/forgeflow-ai/forgeflow-studio
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git remote add hf https://forgeflow-ai:${HF_TOKEN}@huggingface.co/spaces/forgeflow-ai/forgeflow-studio
           git push hf HEAD:main --force
