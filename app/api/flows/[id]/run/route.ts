@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { proxyToCore } from "../../../lib/core-api-proxy";
+import { proxyToCore } from "../../../../lib/core-api-proxy";
 
 /**
  * POST /api/flows/[id]/run - Run a flow
