@@ -36,15 +36,35 @@ export default function NewProjectPage() {
         }),
       });
 
+      // Check if response is ok
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMsg = errorData.error || errorData.detail || `HTTP ${res.status}: ${res.statusText}`;
+        
+        if (res.status === 401 || res.status === 403 || errorMsg.toLowerCase().includes("authorization") || errorMsg.toLowerCase().includes("unauthorized")) {
+          setError("Authentication required. Please configure your API key in Settings.");
+        } else if (res.status === 405) {
+          setError("Method Not Allowed. Please check the API endpoint configuration.");
+        } else {
+          setError(errorMsg || "Failed to create project");
+        }
+        return;
+      }
+
       const data = await res.json();
 
       if (data.ok && data.data) {
         // Redirect to project detail page
-        router.push(`/projects/${data.data.id || data.data.id}`);
+        const projectId = data.data.id;
+        if (projectId) {
+          router.push(`/projects/${projectId}`);
+        } else {
+          router.push("/projects");
+        }
       } else {
         // Check if it's an auth error
         const errorMsg = data.error || data.data?.detail || "Failed to create project";
-        if (errorMsg.toLowerCase().includes("authorization") || res.status === 401 || res.status === 403) {
+        if (errorMsg.toLowerCase().includes("authorization") || errorMsg.toLowerCase().includes("unauthorized")) {
           setError("Authentication required. Please configure your API key in Settings.");
         } else {
           setError(errorMsg);

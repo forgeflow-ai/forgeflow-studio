@@ -44,13 +44,19 @@ export async function proxyToCore(
       headers,
     };
 
+    // Handle body - options.body takes priority, otherwise try to read from request
     if (options.body && (method === "POST" || method === "PUT" || method === "PATCH")) {
       fetchOptions.body = JSON.stringify(options.body);
-    } else if (request.body && (method === "POST" || method === "PUT" || method === "PATCH")) {
-      // If body is provided in request, use it
-      const body = await request.json().catch(() => null);
-      if (body) {
-        fetchOptions.body = JSON.stringify(body);
+    } else if (method === "POST" || method === "PUT" || method === "PATCH") {
+      // Try to clone request to read body (if not already consumed)
+      try {
+        const clonedRequest = request.clone();
+        const body = await clonedRequest.json().catch(() => null);
+        if (body && Object.keys(body).length > 0) {
+          fetchOptions.body = JSON.stringify(body);
+        }
+      } catch {
+        // Body already consumed or not available, skip
       }
     }
 
