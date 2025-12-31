@@ -41,7 +41,13 @@ export default function ProjectsPage() {
         const projectsList = Array.isArray(data.data) ? data.data : data.data.items || [];
         setProjects(projectsList);
       } else {
-        setError(data.error || "Failed to fetch projects");
+        // Check if it's an auth error
+        const errorMsg = data.error || data.data?.detail || "Failed to fetch projects";
+        if (errorMsg.toLowerCase().includes("authorization") || res.status === 401 || res.status === 403) {
+          setError("Authentication required. Please configure your API key in Settings.");
+        } else {
+          setError(errorMsg);
+        }
       }
     } catch (e: any) {
       setError(e?.message ?? "Failed to fetch projects");
@@ -106,7 +112,26 @@ export default function ProjectsPage() {
             marginBottom: 24,
           }}
         >
-          Error: {error}
+          <div style={{ marginBottom: error.includes("Authentication") ? 8 : 0 }}>
+            Error: {error}
+          </div>
+          {error.includes("Authentication") && (
+            <Link
+              href="/settings"
+              style={{
+                display: "inline-block",
+                marginTop: 8,
+                padding: "6px 12px",
+                fontSize: 12,
+                backgroundColor: "#0070f3",
+                color: "white",
+                textDecoration: "none",
+                borderRadius: 4,
+              }}
+            >
+              Go to Settings →
+            </Link>
+          )}
         </div>
       )}
 

@@ -42,7 +42,13 @@ export default function NewProjectPage() {
         // Redirect to project detail page
         router.push(`/projects/${data.data.id || data.data.id}`);
       } else {
-        setError(data.error || data.data?.detail || "Failed to create project");
+        // Check if it's an auth error
+        const errorMsg = data.error || data.data?.detail || "Failed to create project";
+        if (errorMsg.toLowerCase().includes("authorization") || res.status === 401 || res.status === 403) {
+          setError("Authentication required. Please configure your API key in Settings.");
+        } else {
+          setError(errorMsg);
+        }
       }
     } catch (e: any) {
       setError(e?.message ?? "Failed to create project");
@@ -140,7 +146,26 @@ export default function NewProjectPage() {
               marginBottom: 20,
             }}
           >
-            {error}
+            <div style={{ marginBottom: error.includes("Authentication") ? 8 : 0 }}>
+              {error}
+            </div>
+            {error.includes("Authentication") && (
+              <Link
+                href="/settings"
+                style={{
+                  display: "inline-block",
+                  marginTop: 8,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  backgroundColor: "#0070f3",
+                  color: "white",
+                  textDecoration: "none",
+                  borderRadius: 4,
+                }}
+              >
+                Go to Settings →
+              </Link>
+            )}
           </div>
         )}
 
