@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getApiKey } from "./lib/api-key";
+import Link from "next/link";
 
 export default function Home() {
   const [health, setHealth] = useState<any>(null);
@@ -70,19 +71,34 @@ export default function Home() {
         }}
       >
         <h1 style={{ margin: 0 }}>ForgeFlow Studio</h1>
-        <a
-          href="/settings"
-          style={{
-            padding: "8px 16px",
-            fontSize: 14,
-            color: "#0070f3",
-            textDecoration: "none",
-            border: "1px solid #0070f3",
-            borderRadius: 4,
-          }}
-        >
-          Settings
-        </a>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link
+            href="/projects"
+            style={{
+              padding: "8px 16px",
+              fontSize: 14,
+              color: "#0070f3",
+              textDecoration: "none",
+              border: "1px solid #0070f3",
+              borderRadius: 4,
+            }}
+          >
+            Projects
+          </Link>
+          <Link
+            href="/settings"
+            style={{
+              padding: "8px 16px",
+              fontSize: 14,
+              color: "#0070f3",
+              textDecoration: "none",
+              border: "1px solid #0070f3",
+              borderRadius: 4,
+            }}
+          >
+            Settings
+          </Link>
+        </div>
       </div>
 
       {/* Auth Status Indicator */}
