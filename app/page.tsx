@@ -5,32 +5,48 @@ import { getApiKey } from "./lib/api-key";
 
 export default function Home() {
   const [health, setHealth] = useState<any>(null);
+  const [meData, setMeData] = useState<any>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
 
-  useEffect(() => {
+  const fetchData = async () => {
     // Check if API key exists (client-side only)
     setHasApiKey(getApiKey() !== null);
 
-    (async () => {
-      try {
-        const apiKey = getApiKey();
-        const headers: Record<string, string> = {};
+    const apiKey = getApiKey();
+    const headers: Record<string, string> = {};
 
-        // Add Authorization header if API key exists
-        if (apiKey) {
-          headers["Authorization"] = `Bearer ${apiKey}`;
-        }
+    // Add Authorization header if API key exists
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
 
-        const res = await fetch("/api/core-health", {
-          cache: "no-store",
-          headers,
-        });
-        const data = await res.json();
-        setHealth(data);
-      } catch (e: any) {
-        setHealth({ ok: false, error: e?.message ?? "fetch failed" });
-      }
-    })();
+    // Fetch health check
+    try {
+      const res = await fetch("/api/core-health", {
+        cache: "no-store",
+        headers,
+      });
+      const data = await res.json();
+      setHealth(data);
+    } catch (e: any) {
+      setHealth({ ok: false, error: e?.message ?? "fetch failed" });
+    }
+
+    // Fetch /me endpoint
+    try {
+      const res = await fetch("/api/me", {
+        cache: "no-store",
+        headers,
+      });
+      const data = await res.json();
+      setMeData({ ...data, httpStatus: res.status });
+    } catch (e: any) {
+      setMeData({ ok: false, error: e?.message ?? "fetch failed" });
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   // Determine auth status
@@ -127,6 +143,67 @@ export default function Home() {
         Burada <code>ok: true</code> ve <code>data.db_ok: true</code>{" "}
         görüyorsan Studio → Core bağlantısı tamam.
       </p>
+
+      <div style={{ marginTop: 32 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 18 }}>User Info (via /api/me):</h2>
+          <button
+            onClick={fetchData}
+            style={{
+              padding: "6px 12px",
+              fontSize: 12,
+              backgroundColor: "#0070f3",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+            }}
+          >
+            Refresh
+          </button>
+        </div>
+
+        <pre
+          style={{
+            background: "#111",
+            color: "#0f0",
+            padding: 16,
+            borderRadius: 8,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {meData === null
+            ? "Loading..."
+            : JSON.stringify(meData, null, 2)}
+        </pre>
+
+        {meData && (
+          <p style={{ fontSize: 14, color: "#666", marginTop: 8 }}>
+            {meData.httpStatus === 401 ? (
+              <>
+                <strong>Status 401:</strong> Key yokken veya geçersiz key ile{" "}
+                <code>/me</code> çağrısı 401 gösteriyor. ✓
+              </>
+            ) : meData.ok && meData.data ? (
+              <>
+                <strong>Status {meData.httpStatus}:</strong> Key varken user
+                bilgisi dönüyor. ✓
+              </>
+            ) : (
+              <>
+                <strong>Status {meData.httpStatus}:</strong> {meData.error || "Unknown error"}
+              </>
+            )}
+          </p>
+        )}
+      </div>
     </main>
   );
 }
